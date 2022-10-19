@@ -1,6 +1,8 @@
 import java.time.LocalDate;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 
 public class main {
 
@@ -49,9 +51,11 @@ public class main {
         orders.add(or2);
         orders.add(or3);
 
-        //System.out.println(getBooksUnder100(or1.getProducts()));
-        //System.out.println(getBabyCatg(orders));
-        System.out.println(getProductsTier2(orders));
+//        System.out.println(getBooksUnder100(or1.getProducts()));
+//        System.out.println(getBabyCatg(orders));
+//        System.out.println(getToysProductsWith10Discount(or1.getProducts()));
+//        System.out.println(getProductsTier2(orders));
+//        System.out.println(cheapestBook(or1.getProducts()));
     }
 
     //Exercise 1 — Obtain a list of products belongs to category “Books” with price > 100
@@ -75,7 +79,7 @@ public class main {
     }
 
     //Exercise 3 — Obtain a list of product with category = “Toys” and then apply 10% discount
-    public static List<Market.Product> getToysProductsWith10Discount(List<Market.Product> products)
+    public static List<Market.Product> getToysProductsWith10Discount(Set<Market.Product> products)
     {
         return products.stream()
                 .filter(pro -> pro.getCategory().equalsIgnoreCase("Toys"))
@@ -96,12 +100,117 @@ public class main {
     }
 
     //Exercise 5 — Get the cheapest products of “Books” category
-    public static Optional<Market.Product> cheapestBook(List<Market.Product> products)
+    public static Optional<Market.Product> cheapestBook(Set<Market.Product> products)
     {
-        return   products.stream()
-                .filter(p -> p.getCategory().equalsIgnoreCase("Books"))
+        return products.stream()
+                .filter(pro->pro.getCategory().equalsIgnoreCase("Books"))
                 .sorted(Comparator.comparing(Market.Product::getPrice))
                 .findFirst();
     }
 
+    //Exercise 6 — Get the 3 most recent placed order
+    public static List<Market.Order> last3Orders(Set<Market.Order> orders)
+    {
+        return orders.stream()
+                .sorted(Comparator.comparing(Market.Order::getDeliveryDate).reversed())
+                .limit(3)
+                .collect(Collectors.toList());
+    }
+
+    //Exercise 7 — Get a list of orders which were ordered on 15-Mar-2021, log the order records to the console and then return its product list
+    public static List<Market.Product> ordersOn15Mar(Set<Market.Order> orders)
+    {
+        return orders.stream()
+                .filter(o -> o.getOrderDate().compareTo(LocalDate.of(2021, 5, 15)) == 0)
+                .peek(o->System.out.println(o.toString()))
+                .flatMap(o -> o.getProducts().stream())
+                .distinct()
+                .collect(Collectors.toList());
+    }
+
+    //Exercise 8 — Calculate total lump sum of all orders placed in Feb 2021
+    public static DoubleStream sumOrdersInFeb2021(Set<Market.Order> orders)
+    {
+        return orders.stream()
+                .filter(o -> o.getOrderDate().compareTo(LocalDate.of(2021, 2, 1)) >= 0)
+                .filter(o -> o.getOrderDate().compareTo(LocalDate.of(2021, 3, 1)) < 0)
+                .flatMap(order -> order.getProducts().stream())
+                .mapToDouble(Market.Product::getPrice);
+    }
+
+    //Exercise 9 — Calculate order average payment placed on 14-Mar-2021
+    public static Double averagePaymentOn14Mar(Set<Market.Order> orders)
+    {
+        return orders.stream()
+                .filter(o -> o.getOrderDate().compareTo(LocalDate.of(2021, 2, 14)) == 0)
+                .flatMap(o->o.getProducts().stream())
+                .mapToDouble(Market.Product::getPrice)
+                .average().getAsDouble();
+    }
+
+    //Exercise 10 — Obtain a collection of statistic figures (i.e. sum, average, max, min, count) for all products of category “Books”
+    public static DoubleSummaryStatistics statisticsBooks(Set<Market.Product> products)
+    {
+        return products.stream()
+                .filter(pro->pro.getCategory().equalsIgnoreCase("Books"))
+                .mapToDouble(p-> p.getPrice())
+                .summaryStatistics();
+    }
+
+    //Exercise 11 — Obtain a data map with order id and order’s product count
+    public static Map<UUID, Integer> OrderIdProductCount(Set<Market.Order> orders)
+    {
+        return orders.stream()
+                .collect(
+                        Collectors.toMap(
+                                order -> order.getId(),
+                                order -> order.getProducts().size()
+                        )
+                );
+    }
+
+    //Exercise 12 — Produce a data map with order records grouped by customer
+    public static Map<Market.Customer, List<Market.Order>> dataMap(Set<Market.Order> orders)
+    {
+        return orders.stream()
+                .collect(
+                        Collectors.groupingBy(Market.Order::getCustomer)
+                );
+    }
+
+    //Exercise 13 — Produce a data map with order record and product total sum
+    public static Map<Market.Order, Double> orderProductTotal(Set<Market.Order> orders)
+    {
+        return orders.stream()
+                .collect(
+                        Collectors.toMap(
+                                Function.identity(),
+                                order -> order.getProducts().stream()
+                                        .mapToDouble(p -> p.getPrice()).sum()
+                        )
+                );
+    }
+
+    //Exercise 14 — Obtain a data map with list of product name by category
+    public static Map<String,List<String>> productNameByCateg(Set<Market.Product> products)
+    {
+        return products.stream()
+                .collect(
+                        Collectors.groupingBy(
+                                Market.Product::getCategory,
+                                Collectors.mapping(product -> product.getName(), Collectors.toList()))
+                );
+    }
+
+    //Exercise 15 — Get the most expensive product by category
+    public static Map<String, Optional<Market.Product>> mostExpensive(Set<Market.Product> products)
+    {
+        return products.stream()
+                .collect(
+                Collectors.groupingBy(
+                        Market.Product::getCategory,
+                        Collectors.maxBy(Comparator.comparing(Market.Product::getPrice))
+                )
+                );
+    }
 }
